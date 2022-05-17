@@ -9,6 +9,12 @@ start with console version; then switch to GUI
 Classes:
 SnakeMain: to run the game
 -main
+SnakeGame: does moves, gets input, and determines win/loss
+-currentDirection
+-move()
+-getDirection()
+-win()
+-loss()
 SnakeMatrix: hold the board
 -SnakeSpace[][]
 -SnakeMatrix()
