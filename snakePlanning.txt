@@ -1,0 +1,22 @@
+Snake Planning
+Game:
+board (square matrix) containing open space, a snake, and an apple
+the snake eats an apple and gains size; a new apple spawns elsewhere on the board
+goal is to fill the board with the body of the snake
+
+start with console version; then switch to GUI
+
+Classes:
+SnakeMain: to run the game
+-main
+SnakeMatrix: hold the board
+-SnakeSpace[][]
+-SnakeMatrix()
+-initializeMatrix()
+-move()
+-generateApple()
+SnakeSpace: a spot on the board
+-char val
+-SnakeSpace(char val)
+-getVal()
+-setVal()
