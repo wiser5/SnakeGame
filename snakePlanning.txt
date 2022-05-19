@@ -26,3 +26,20 @@ SnakeSpace: a spot on the board
 -SnakeSpace(char val)
 -getVal()
 -setVal()
+
+GUI Planning
+Snake Game should be at the top of each display
+add my name very small at the bottom?
+
+home screen: display high scores, button to play, button to display directions, button to quit program (also have red exit button close)
+
+directions: list of directions, button to return to home screen
+
+game: countdown to start, score to beat (minimum score to get on leaderboard), matrix, button stating key bindings, buttons to press to move, button to quit and return to main screen
+
+matrix from game: make every space a box; open space green, snake blue, snake head red
+
+screen to get name for leaderboard if applicable: label explaining screen, way to get input by typing (probably JTextArea)
+
+things to possibly add later
+ability to change key bindings
