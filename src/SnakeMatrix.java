@@ -15,6 +15,7 @@ public class SnakeMatrix {
     private Location snakeTail; //location of the tail of the snake
     private Location apple; //location of the apple currently on the map
     private Random rand; //random class used in generation of the snake (initially) and apples
+    private SnakeGame currentGame; //holds the instance of the current snake game
 
     /**
      * constructor for snakeMatrix based on a given sideLength
@@ -22,7 +23,8 @@ public class SnakeMatrix {
      * uses initializeMatrix() to create open space and then initialize snake and apple
      * @param sideLength
      */
-    public SnakeMatrix(int sideLength) {
+    public SnakeMatrix(SnakeGame game, int sideLength) {
+        currentGame = game;
         sLength = sideLength;
         initializeMatrix();
     }
@@ -74,7 +76,7 @@ public class SnakeMatrix {
         }
         if(adjusted)    snakeTail = snakeBody.get(snakeBody.size() - 1); //changes tail location if values were changed
 
-        if(snakeBody.size() != initialSnakeLength)  System.out.println("SNAKE LENGTH INITIALIZATION ERROR!");
+        if(snakeBody.size() != initialSnakeLength)  System.out.println("SNAKE LENGTH INITIALIZATION ERROR!!!");
 
         //adjusts locations if head too close to the edge of the matrix and if space is available
         if(snakeHead.c >= sLength - 2 && minCol(snakeBody) - 2 >= 0) {
@@ -88,27 +90,55 @@ public class SnakeMatrix {
         snakeBody.remove(snakeHead);
         snakeBody.remove(snakeTail);
 
+        if(snakeBody.size() > 1)    sortInitialSnake();
+
         //changes value for snake tail and head in matrix
-        matrix[snakeHead.r][snakeHead.c].setVal(SnakeSpace.snakeHead);
-        matrix[snakeTail.r][snakeTail.c].setVal(SnakeSpace.snakeTail);
+        changeSpace(snakeHead, SnakeSpace.snakeHead);
+        changeSpace(snakeTail, SnakeSpace.snakeTail);
 
         //changes value for snake body parts
         for(Location body : snakeBody) {
-            matrix[body.r][body.c].setVal(SnakeSpace.snakeBody);
+            changeSpace(body, SnakeSpace.snakeBody);
         }
 
+    }
+
+    /**
+     * sorts the initial snake body
+     */
+    private void sortInitialSnake() {
+        List<Location> newLocs = new ArrayList<>(); //eventual snakeBody list
+
+        Location currentLocation = new Location(snakeHead); //the location to add to the new locations
+        Location left = new Direction(Direction.left).getNewLocation(currentLocation); //left position
+        Location right = new Direction(Direction.right).getNewLocation(currentLocation); //right position
+
+        Direction dirToAdd = new Direction(Direction.up); //direction that the points are located from the head
+        if(snakeBody.contains(left))    dirToAdd.setDirection(Direction.left); //changes direction to left if appropriate
+        if(snakeBody.contains(right))   dirToAdd.setDirection(Direction.right); //changes direction to right if appropriate
+        if(dirToAdd.equals(new Direction(Direction.up))) System.out.println("INITIAL SNAKE BODY ERROR!!!");
+
+        //adds nodes until size reached
+        while(newLocs.size() < snakeBody.size()) {
+            currentLocation = dirToAdd.getNewLocation(currentLocation);
+            newLocs.add(currentLocation);
+        }
+
+        snakeBody = newLocs; //switches snakeBody lists
     }
 
     /**
      * adds a new apple to the map in an unoccupied location
      */
     private void addApple() {
+        isWon();
+        if(currentGame.win)    return;
         apple = new Location(rand.nextInt(sLength), rand.nextInt(sLength)); //chooses random space
         //choose random space until chosen space is unoccupied
         while(matrix[apple.r][apple.c].getVal() != SnakeSpace.openSpace) {
             apple = new Location(rand.nextInt(sLength), rand.nextInt(sLength));
         }
-        matrix[apple.r][apple.c].setVal(SnakeSpace.apple); //updates location
+        changeSpace(apple, SnakeSpace.apple); //updates location
     }
 
     /**
@@ -143,26 +173,48 @@ public class SnakeMatrix {
         return result;
     }
 
-    public void move(SnakeGame game, Direction dir) {
-        if(snakeBody.size() + 2 == sLength * sLength) { //board full, won
-            game.win = true;
-            return;
-        }
-
+    /**
+     * moves the snake if it does not result in a loss
+     * @param dir (direction to move)
+     */
+    public void move(Direction dir) {
         Location newLoc = dir.getNewLocation(snakeHead);
 
         if(isLost(newLoc)) { //lost
-            game.loss = true;
+            currentGame.loss = true;
             return;
         }
 
         if(apple.equals(newLoc)) { //eating
+            snakeBody.add(0, new Location(snakeHead)); //adds previous head position to body
+            changeSpace(snakeHead, SnakeSpace.snakeBody); //changes matrix for previous head position
 
+            snakeHead = newLoc; //updates head location
+            changeSpace(snakeHead, SnakeSpace.snakeHead); //updates head matrix location
+
+            addApple(); //new apple
         }
 
         else { //not eating
+            changeSpace(snakeTail, SnakeSpace.openSpace); //changes previous tail to open space in matrix
+            snakeTail = snakeBody.get(snakeBody.size() - 1); //gets new tail position
+            changeSpace(snakeTail, SnakeSpace.snakeTail); //changes matrix for new snake tail
+            snakeBody.remove(snakeTail); //removes the new snake tail from the snake body list
 
+            snakeBody.add(0, new Location(snakeHead)); //adds the new body location (previously a head) to the start of the list
+            changeSpace(snakeHead, SnakeSpace.snakeBody); //changes old head in matrix
+            snakeHead = newLoc; //updates head location
+            changeSpace(snakeHead, SnakeSpace.snakeHead); //changes new head in matrix
         }
+    }
+
+    /**
+     * changes a spaces based on a given location and a new value
+     * @param loc: space in matrix to change
+     * @param newVal: value to change location to
+     */
+    private void changeSpace(Location loc, char newVal) {
+        matrix[loc.r][loc.c].setVal(newVal);
     }
 
     /**
@@ -177,6 +229,15 @@ public class SnakeMatrix {
         if(loc.r < 0 || loc.r >= sLength)   return true;
         if(snakeBody.contains(loc))    return true;
         return false;
+    }
+
+    /**
+     * changes the value for currentGame.win if the board is full
+     */
+    public void isWon() {
+        if(getSnakeLength() == sLength * sLength) { //board full, won
+            currentGame.win = true;
+        }
     }
 
     /**

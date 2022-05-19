@@ -11,6 +11,11 @@ public class Location {
         c = col;
     }
 
+    public Location(Location loc) {
+        r = loc.r;
+        c = loc.c;
+    }
+
     public String toString() { //row then column
         return r + ", " + c;
     }

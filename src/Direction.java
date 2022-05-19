@@ -42,4 +42,20 @@ public class Direction {
         return Location.addLocations(original, direction);
     }
 
+    public boolean equals(Object o) {
+        if(o instanceof Direction) {
+            Direction compare = (Direction) o;
+            return direction.equals(compare.direction);
+        }
+        return false;
+    }
+
+    public String toString() {
+        if(direction.equals(getFromDirectionList(Direction.up)))    return "up";
+        if(direction.equals(getFromDirectionList(Direction.right)))    return "right";
+        if(direction.equals(getFromDirectionList(Direction.down)))    return "down";
+        if(direction.equals(getFromDirectionList(Direction.left)))    return "left";
+        else return "DIRECTION TOSTRING ERROR!!!";
+    }
+
 }
