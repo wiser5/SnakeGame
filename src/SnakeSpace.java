@@ -1,29 +1,38 @@
+import java.awt.Color;
+
 /**
  * class to store values held in the SnakeGame matrix
  */
 public class SnakeSpace {
 
-    private char val;
-    public static final char snakeHead = 'h';
-    public static final char snakeTail = 't';
-    public static final char snakeBody = 's';
-    public static final char apple = 'a';
-    public static final char openSpace = '-';
+    private Color c;
+    public static final Color snakeHead = Color.BLACK;
+    public static final Color snakeBody = Color.BLUE;
+    public static final Color snakeTail = Color.ORANGE;
+    public static final Color apple = Color.RED;
+    public static final Color openSpace = Color.GREEN;
 
-    public SnakeSpace(char value) { //constructor
-        val = value;
+    public SnakeSpace(Color value) { //constructor
+        c = value;
     }
 
-    public char getVal() { //value getter
-        return val;
+    public Color getVal() { //value getter
+        return c;
     }
 
-    public void setVal(char value) { //value setter
-        val = value;
+    public void setVal(Color value) { //value setter
+        c = value;
     }
 
-    public String toString() {
-        return String.valueOf(val);
+    public String toString() { //TODO: change colors if needed
+        String result = "";
+        if(c.equals(snakeHead)) result += "snakeHead";
+        else if(c.equals(snakeBody)) result += "snakeBody";
+        else if(c.equals(snakeTail)) result += "snakeTail";
+        else if(c.equals(apple)) result += "apple";
+        else if(c.equals(openSpace)) result += "openSpace";
+        else return "SnakeSpace toString Error!!!";
+        return result + c;
     }
 
 }

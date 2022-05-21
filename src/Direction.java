@@ -7,8 +7,10 @@ public class Direction {
     public static final int right = 1;
     public static final int down = 2;
     public static final int left = 3;
+    public static final int none = 4;
     private static final Location[] directionList = {new Location(-1, 0), new Location(0, 1),
-                                                     new Location(1, 0), new Location(0, -1)};
+                                                     new Location(1, 0), new Location(0, -1),
+                                                     new Location(0, 0)};
 
     private Location direction;
 
@@ -55,7 +57,8 @@ public class Direction {
         if(direction.equals(getFromDirectionList(Direction.right)))    return "right";
         if(direction.equals(getFromDirectionList(Direction.down)))    return "down";
         if(direction.equals(getFromDirectionList(Direction.left)))    return "left";
-        else return "DIRECTION TOSTRING ERROR!!!";
+        if(direction.equals(getFromDirectionList(Direction.none)))  return "none";
+        else return "Direction toString Error!!!";
     }
 
 }

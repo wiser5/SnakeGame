@@ -39,6 +39,8 @@ game: countdown to start, score to beat (minimum score to get on leaderboard), m
 
 matrix from game: make every space a box; open space green, snake blue, snake head red
 
+post game screen: button to go to enter username for leaderboard if applicable, button to return to home
+
 screen to get name for leaderboard if applicable: label explaining screen, way to get input by typing (probably JTextArea)
 
 things to possibly add later

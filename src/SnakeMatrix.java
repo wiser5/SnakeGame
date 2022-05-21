@@ -1,6 +1,9 @@
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
+import java.awt.Color;
+import javax.swing.JPanel;
+import javax.swing.border.LineBorder;
 
 /**
  * class that holds and modifies the matrix for the Snake Game
@@ -16,6 +19,7 @@ public class SnakeMatrix {
     private Location apple; //location of the apple currently on the map
     private Random rand; //random class used in generation of the snake (initially) and apples
     private SnakeGame currentGame; //holds the instance of the current snake game
+    public JPanel[][] matrixPanels;
 
     /**
      * constructor for snakeMatrix based on a given sideLength
@@ -178,6 +182,8 @@ public class SnakeMatrix {
      * @param dir (direction to move)
      */
     public void move(Direction dir) {
+        if(dir.equals(new Direction(Direction.none)))   return;
+
         Location newLoc = dir.getNewLocation(snakeHead);
 
         if(isLost(newLoc)) { //lost
@@ -206,6 +212,9 @@ public class SnakeMatrix {
             snakeHead = newLoc; //updates head location
             changeSpace(snakeHead, SnakeSpace.snakeHead); //changes new head in matrix
         }
+
+        createOrUpdateMatrixPanel();
+
     }
 
     /**
@@ -213,7 +222,7 @@ public class SnakeMatrix {
      * @param loc: space in matrix to change
      * @param newVal: value to change location to
      */
-    private void changeSpace(Location loc, char newVal) {
+    private void changeSpace(Location loc, Color newVal) {
         matrix[loc.r][loc.c].setVal(newVal);
     }
 
@@ -246,6 +255,31 @@ public class SnakeMatrix {
      */
     public int getSnakeLength() {
         return snakeBody.size() + 2;
+    }
+
+    /**
+     * creates or updates matrixPanels to correct colors
+     */
+    public void createOrUpdateMatrixPanel() {
+        if(matrixPanels == null) {
+            matrixPanels = new JPanel[sLength][sLength];
+            for(int r = 0; r < sLength; r++) {
+                for(int c = 0; c < sLength; c++) {
+                    JPanel newPanel = new JPanel();
+                    newPanel.setBackground(matrix[r][c].getVal());
+                    //newPanel.setBorder(new LineBorder(Color.BLACK));
+                    matrixPanels[r][c] = newPanel;
+                }
+            }
+        }
+        else {
+            //TODO: optimize to only update needed panels
+            for(int r = 0; r < sLength; r++) {
+                for(int c = 0; c < sLength; c++) {
+                    matrixPanels[r][c].setBackground(matrix[r][c].getVal());
+                }
+            }
+        }
     }
 
 }
