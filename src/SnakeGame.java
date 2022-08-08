@@ -9,19 +9,15 @@ import java.util.ArrayList;
  */
 public class SnakeGame {
 
-    //int values to use as placeholders for stages in the game
-    public static final int menu = 0;
-    public static final int rules = 1;
-    public static final int scores = 2;
-    public static final int game = 3;
-    public static final int postGame = 4;
-    public static final int quit = 5;
-    private JPanel[] panels = new JPanel[5]; //array for the panels used in the game
+    public static final int game = 0;
+    public static final int pg = 1;
+    public static final int hs = 2;
+    public static final int quit = 3;
+    private JFrame frame;
     private static final Scanner in = new Scanner(System.in); //scanner used when game was text based
     private final static int sideLength = 50;
+    private SnakeKeybinds keys = new SnakeKeybinds(this);
     private SnakeMatrix matrix;
-    private SnakeKeybinds keys = new SnakeKeybinds(this, panels);; //keybind class for the game
-    private JFrame currentFrame; //the current frame being used in the game
 
     /**
      * constructor for SnakeGame
@@ -29,98 +25,61 @@ public class SnakeGame {
      */
     public SnakeGame() {
         Score.initializeScores();
-        transition(menu);
+        matrix = new SnakeMatrix(this, keys, sideLength);
+        transition(pg);
     }
 
     /**
-     * transitions to a new screen
-     * @param newP
+     * transitions into a new frame
+     * @param val (frame to transition to)
      */
-    public void transition(int newP) {
-        if(currentFrame != null)    currentFrame.dispose(); //removes old frame
-        if(newP == game) { //creates game if not already created and runs the game
-            if(matrix == null)  matrix = new SnakeMatrix(this, keys, sideLength);
-            matrix.playGame();
-            return;
-        }
-        else if(newP == quit)    return; //quit
-        String title = "Snake Game: ";
-        if(newP == menu)    title += "Menu";
-        else if(newP == rules)  title += "Rules";
-        else if(newP == postGame)   title += "Post Game";
-        currentFrame = new JFrame(title);
-        //initialize panel if it needs to be initialized
-        boolean addKB = true;
-        if(newP == scores) initScores();
-        else if(newP == postGame) initPG();
-        else if(panels[newP] == null) {
-            if (newP == menu) initMenu();
-            else if (newP == rules) initRules();
-        }
-        else    addKB = false;
-        keys.addKeyBinds(addKB, newP); //keybinds
-        currentFrame.setSize(new Dimension(600, 600));
-        currentFrame.add(panels[newP]);
-        currentFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        currentFrame.setVisible(true);
+    public void transition(int val) {
+        if(val == pg)   initPG();
+        else if(val == hs)  initScores();
+        else if(val == quit)    frame.dispose();
     }
 
     /**
-     * creates the menu frame
+     * returns a transition button that moves to a specified destination
+     * @param destination (where button will transition to)
+     * @return
      */
-    private void initMenu() {
-        panels[menu] = new JPanel();
-        panels[menu].setLayout(new GridLayout(5, 1));
-        JLabel label = new JLabel("Snake Game");
-        label.setHorizontalAlignment(SwingConstants.CENTER);
-        panels[menu].add(label);
-        panels[menu].add(getTransitionButton("(Space) Play", game));
-        panels[menu].add(getTransitionButton("(1) Rules", rules));
-        panels[menu].add(getTransitionButton("(2) High Scores", scores));
-        panels[menu].add(getTransitionButton("(Esc) Quit", quit));
+    private JButton getTransitionButton(int destination) {
+        JButton button = new JButton();
+        if(destination == hs)   button.setText("(Space) High Scores");
+        else if(destination == quit)    button.setText("(Esc) Quit, Restart to Play Again");
+        button.addActionListener(new SnakeButtonListener(this, destination));
+        return button;
     }
 
     /**
-     * display for the rules
+     * disposes an old frame (if there is an old frame) and creates a new frame
      */
-    private void initRules() {
-        panels[rules] = new JPanel();
-        List<String> r = new ArrayList<>();
-        r.add("Enter a Direction to Start");
-        r.add("Directions Can Be Entered Via Buttons or Keyboard");
-        r.add("Controls Are Shown in Game");
-        r.add("The Snake Moves Around Based on the Specified Direction");
-        r.add("Eat Apples to Expand in Size");
-        r.add("Score is Based on Size");
-        r.add("If a New High Score is Reached, the User Will Be Prompted for a Name to Record");
-
-        panels[rules].setLayout(new GridLayout(r.size() + 1, 1));
-        for (String rule : r) {
-            JLabel label = new JLabel(rule);
-            label.setFont(new Font(Font.SERIF, Font.PLAIN, 15));
-            label.setHorizontalAlignment(SwingConstants.CENTER);
-            panels[rules].add(label);
-        }
-        panels[rules].add(getTransitionButton("(Esc) Return to Menu", menu));
+    private void resetFrame() {
+        if(frame != null)   frame.dispose();
+        frame = new JFrame();
+        frame.setSize(new Dimension(600, 600));
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     /**
      * creates the high score screen
      */
     private void initScores() {
-        panels[scores] = new JPanel();
+        JPanel p = new JPanel();
         List<Score> currScores = Score.getHighScores();
-        if(currScores.isEmpty()) {
-            panels[scores].setLayout(new GridLayout(2, 1));
+        if(currScores.isEmpty()) { //no scores
+            p.setLayout(new GridLayout(2, 1));
             JLabel label = new JLabel("No High Scores Currently");
             label.setFont(new Font(Font.SERIF, Font.BOLD, 15));
             label.setHorizontalAlignment(SwingConstants.CENTER);
-            panels[scores].add(label);
+            p.add(label);
         }
         else {
-            panels[scores].setLayout(new GridLayout(currScores.size() + 2, 1));
+            p.setLayout(new GridLayout(currScores.size() + 2, 1));
             JPanel top = new JPanel();
             top.setLayout(new GridLayout(1,3));
+            //creates the header row for the scores table
             JLabel rank = new JLabel("Rank");
             rank.setHorizontalAlignment(SwingConstants.CENTER);
             rank.setFont(new Font(Font.SERIF, Font.BOLD, 15));
@@ -133,8 +92,8 @@ public class SnakeGame {
             ts.setHorizontalAlignment(SwingConstants.CENTER);
             ts.setFont(new Font(Font.SERIF, Font.BOLD, 15));
             top.add(ts);
-            panels[scores].add(top);
-            for(int i = 0; i < currScores.size(); i++) {
+            p.add(top);
+            for(int i = 0; i < currScores.size(); i++) { //adds a score to the display
                 JPanel inner = new JPanel();
                 inner.setLayout(new GridLayout(1, 3));
                 JLabel num = new JLabel(String.valueOf(i + 1));
@@ -149,33 +108,45 @@ public class SnakeGame {
                 s.setHorizontalAlignment(SwingConstants.CENTER);
                 s.setFont(new Font(Font.SERIF, Font.BOLD, 15));
                 inner.add(s);
-                panels[scores].add(inner);
+                p.add(inner);
             }
         }
-        panels[scores].add(getTransitionButton("(Esc) Return to Menu", menu));
+        p.add(getTransitionButton(quit));
+        keys.addHSKeys(p);
+        resetFrame();
+        frame.setTitle("Snake Game: High Scores");
+        frame.add(p);
+        frame.setVisible(true);
     }
 
     /**
      * panel for the after game (displaying score and returning to menu)
      */
     private void initPG() {
-        panels[postGame] = new JPanel();
-        int rows = 2;
+        JPanel p = new JPanel();
+        int rows = 4;
         if(matrix.win) rows++;
         if(Score.canAddHighScore(matrix.getSnakeLength()))    rows += 2;
-        panels[postGame].setLayout(new GridLayout(rows, 1));
+        p.setLayout(new GridLayout(rows, 1));
         if(matrix.win) {
             JLabel winner = new JLabel("Winner!!!");
             winner.setHorizontalAlignment(SwingConstants.CENTER);
-            panels[postGame].add(winner);
+            p.add(winner);
         }
         JLabel finalScore = new JLabel("Final Score (Snake Length): " + matrix.getSnakeLength());
         finalScore.setHorizontalAlignment(SwingConstants.CENTER);
-        panels[postGame].add(finalScore);
+        p.add(finalScore);
 
-        if(rows > 3)    panels[postGame].add(initHS());
+        if(Score.canAddHighScore(matrix.getSnakeLength()))    p.add(initHS());
 
-        panels[postGame].add(getTransitionButton("(Esc) Return to Menu", menu));
+        p.add(getTransitionButton(hs));
+        p.add(getTransitionButton(quit));
+
+        keys.addPGKeys(p);
+        resetFrame();
+        frame.setTitle("Snake Game: Post Game");
+        frame.add(p);
+        frame.setVisible(true);
     }
 
     /**
@@ -206,35 +177,22 @@ public class SnakeGame {
      * sets up the frame after a name is entered of a high score
      */
     public void removeHSPanel() {
-        panels[postGame] = new JPanel();
-        panels[postGame].setLayout(new GridLayout(3, 1));
+        JPanel p = new JPanel();
+        p.setLayout(new GridLayout(4, 1));
         JLabel finalScore = new JLabel("Final Score (Snake Length): " + matrix.getSnakeLength());
         finalScore.setHorizontalAlignment(SwingConstants.CENTER);
-        panels[postGame].add(finalScore);
+        p.add(finalScore);
         JLabel label = new JLabel("Score Added");
         label.setHorizontalAlignment(SwingConstants.CENTER);
-        panels[postGame].add(label);
-        panels[postGame].add(getTransitionButton("(Esc) Return to Menu", menu));
-        keys.addKeyBinds(true, postGame);
+        p.add(label);
+        p.add(getTransitionButton(hs));
+        p.add(getTransitionButton(quit));
 
-        currentFrame.dispose();
-        currentFrame = new JFrame("Snake Game: Post Game");
-        currentFrame.setSize(new Dimension(600, 600));
-        currentFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        currentFrame.add(panels[postGame]);
-        currentFrame.setVisible(true);
-    }
-
-    /**
-     * returns a transition button that moves to a specified destination
-     * @param name (displayed name of the button)
-     * @param destination (where button will transition to)
-     * @return
-     */
-    private JButton getTransitionButton(String name, int destination) {
-        JButton button = new JButton(name);
-        button.addActionListener(new SnakeButtonListener(this, destination));
-        return button;
+        keys.addPGKeys(p);
+        resetFrame();
+        frame.setTitle("Snake Game: Post Game");
+        frame.add(p);
+        frame.setVisible(true);
     }
 
     /**

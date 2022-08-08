@@ -3,7 +3,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
 import javax.swing.*;
-import javax.swing.border.LineBorder;
 
 /**
  * class that holds and modifies the matrix for the Snake Game
@@ -45,6 +44,7 @@ public class SnakeMatrix {
         k.addGameKeyBinds(this, matrixP);
         frame.add(matrixP);
         frame.add(initGB());
+        playGame();
     }
 
     /**
@@ -67,8 +67,7 @@ public class SnakeMatrix {
             }
             if(!pause)   move(currentDirection); //moves the snake
         }
-        frame.setVisible(false);
-        currentGame.transition(SnakeGame.postGame); //moves the game to postgame
+        frame.dispose();
     }
 
     /**
@@ -184,9 +183,20 @@ public class SnakeMatrix {
      * adds a new apple to the map in an unoccupied location
      */
     private void addApple() {
-        //todo: optimize to pick from list of remaining spaces
         isWon();
         if(win)    return;
+        if(getSnakeLength() >= sLength) {
+            //attempt to optimize by choosing from list of open locations if snake length >= side length
+            List<Location> open = new ArrayList<>();
+            for(int r = 0; r < sLength; r++) {
+                for(int c = 0; c < sLength; c++) {
+                    if(matrix[r][c].getVal() == SnakeSpace.openSpace)   open.add(new Location(r, c));
+                }
+            }
+            apple = open.get(rand.nextInt(open.size())); //chooses random
+            changeSpace(apple, SnakeSpace.apple); //updates location
+            return;
+        }
         apple = new Location(rand.nextInt(sLength), rand.nextInt(sLength)); //chooses random space
         //choose random space until chosen space is unoccupied
         while(matrix[apple.r][apple.c].getVal() != SnakeSpace.openSpace) {
@@ -323,7 +333,6 @@ public class SnakeMatrix {
             }
         }
         else {
-            //TODO: optimize to only update needed panels
             for(int r = 0; r < sLength; r++) {
                 for(int c = 0; c < sLength; c++) {
                     matrixPanel[r][c].setBackground(matrix[r][c].getVal());

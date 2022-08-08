@@ -10,52 +10,13 @@ public class SnakeKeybinds {
 
     private SnakeGame g;
     private SnakeMatrix m;
-    private JPanel[] p;
-    private int s;
 
     /**
      * constructor
      * @param game
      */
-    SnakeKeybinds(SnakeGame game, JPanel[] panels) {
+    SnakeKeybinds(SnakeGame game) {
         g = game;
-        p = panels;
-    }
-
-    /**
-     * switches key status and adds keybinds if necessary
-     * @param addKB
-     * @param status
-     */
-    public void addKeyBinds(boolean addKB, int status) {
-        s = status;
-        if(!addKB) return;
-        if(s == SnakeGame.menu) addMenuKeyBinds();
-        else onlyEscape();
-    }
-
-    /**
-     * keybinds for the menu
-     */
-    private void addMenuKeyBinds() {
-        InputMap inMap = p[s].getInputMap();
-        ActionMap actMap = p[s].getActionMap();
-
-        //space
-        inMap.put(KeyStroke.getKeyStroke(' '), "Space");
-        actMap.put("Space", new SpaceAction());
-
-        //1
-        inMap.put(KeyStroke.getKeyStroke('1'), "One");
-        actMap.put("One", new NumberAction(1));
-
-        //2
-        inMap.put(KeyStroke.getKeyStroke('2'), "Two");
-        actMap.put("Two", new NumberAction(2));
-
-        //escape
-        inMap.put(KeyStroke.getKeyStroke("ESCAPE"), "Escape");
-        actMap.put("Escape", new EscapeAction());
     }
 
     /**
@@ -63,10 +24,9 @@ public class SnakeKeybinds {
      */
     public void addGameKeyBinds(SnakeMatrix matrix, JPanel panel) {
         m = matrix;
-        p[SnakeGame.game] = panel;
         //input map and action map
-        InputMap inMap = p[SnakeGame.game].getInputMap();
-        ActionMap actMap = p[SnakeGame.game].getActionMap();
+        InputMap inMap = panel.getInputMap();
+        ActionMap actMap = panel.getActionMap();
 
         //directions to action map
         actMap.put("Up", new DirectionAction(Direction.up));
@@ -98,11 +58,21 @@ public class SnakeKeybinds {
 
         //space
         inMap.put(KeyStroke.getKeyStroke(' '), "Space");
-        actMap.put("Space", new SpaceAction());
+        actMap.put("Space", new SpaceAction(SnakeGame.game));
 
         //escape
         inMap.put(KeyStroke.getKeyStroke("ESCAPE"), "Escape");
-        actMap.put("Escape", new EscapeAction());
+        actMap.put("Escape", new EscapeAction(SnakeGame.game));
+    }
+
+    public void addPGKeys(JPanel p) {
+        p.getInputMap().put(KeyStroke.getKeyStroke(' '), "Space");
+        p.getActionMap().put("Space", new SpaceAction(SnakeGame.pg));
+        onlyEscape(p, SnakeGame.pg);
+    }
+
+    public void addHSKeys(JPanel p) {
+        onlyEscape(p, SnakeGame.hs);
     }
 
     /**
@@ -125,9 +95,9 @@ public class SnakeKeybinds {
     /**
      * when only the escape button needs to be mapped to a component
      */
-    private void onlyEscape() {
-        p[s].getInputMap().put(KeyStroke.getKeyStroke("ESCAPE"), "Escape");
-        p[s].getActionMap().put("Escape", new EscapeAction());
+    private void onlyEscape(JPanel p, int status) {
+        p.getInputMap().put(KeyStroke.getKeyStroke("ESCAPE"), "Escape");
+        p.getActionMap().put("Escape", new EscapeAction(status));
     }
 
     /**
@@ -157,10 +127,16 @@ public class SnakeKeybinds {
      */
     public class SpaceAction extends AbstractAction {
 
+        private int s;
+
+        public SpaceAction(int status) {
+            s = status;
+        }
+
         @Override
         public void actionPerformed(ActionEvent e) {
-            if(s == SnakeGame.menu)   g.transition(SnakeGame.game); //transitions to the game from the menu
-            else if(s == SnakeGame.game)   m.pause = !m.pause; //resumes or pauses the game
+            if(s == SnakeGame.game) m.pause = !m.pause; //resumes or pauses the game
+            else if(s == SnakeGame.pg)  g.transition(SnakeGame.hs);
         }
 
     }
@@ -170,30 +146,16 @@ public class SnakeKeybinds {
      */
     public class EscapeAction extends AbstractAction {
 
+        private int s;
+
+        public EscapeAction(int status) {
+            s = status;
+        }
+
         @Override
         public void actionPerformed(ActionEvent e) {
             if(s == SnakeGame.game) m.loss = true; //ends game
-            else if(s == SnakeGame.menu) g.transition(SnakeGame.quit); //exits game
-            else g.transition(SnakeGame.menu); //transitions back to menu
-        }
-
-    }
-
-    /**
-     * inner class for the transition numbers in the main menu
-     */
-    public class NumberAction extends AbstractAction {
-
-        private int val;
-
-        NumberAction(int num) {
-            val = num;
-        }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            if(val == 1)    g.transition(SnakeGame.rules);
-            if(val == 2)    g.transition(SnakeGame.scores);
+            else g.transition(SnakeGame.quit); //transitions back to menu
         }
 
     }
