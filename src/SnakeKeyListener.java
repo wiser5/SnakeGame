@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 /**
  * deals with input from the keyboard in snake game
+ * not used because keybinds do not require focus and can work with buttons on the screen
  */
 public class SnakeKeyListener implements KeyListener, ActionListener {
 
@@ -21,7 +22,6 @@ public class SnakeKeyListener implements KeyListener, ActionListener {
      */
     SnakeKeyListener(SnakeGame game) {
         g = game;
-        g.pause = false;
         initializeMap();
     }
 
@@ -54,11 +54,14 @@ public class SnakeKeyListener implements KeyListener, ActionListener {
     public void keyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
 
-        if(directionMap.containsKey(keyCode) && !g.pause)   g.currentDirection.setDirection(directionMap.get(keyCode)); //changes direction
+        /*
+        if(directionMap.containsKey(keyCode) && !g.pause)   g.changeDirection(directionMap.get(keyCode)); //changes direction
 
         if(keyCode == KeyEvent.VK_SPACE)    g.pause = !g.pause; //switches pause
 
         if(keyCode == KeyEvent.VK_ESCAPE)   g.loss = true; //ends game if escape is entered
+
+         */
     }
 
     @Override
@@ -68,6 +71,7 @@ public class SnakeKeyListener implements KeyListener, ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        System.out.println("button");
+
     }
+
 }

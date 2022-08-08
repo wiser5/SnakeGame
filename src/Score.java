@@ -13,9 +13,9 @@ public class Score {
 
     private String n; //name
     private int s; //score
-    private static final int numHighScores = 5;
+    private static final int numHighScores = 5; //number of high scores that can be listed
     private final static File file = new File("highScores.txt"); //high score file
-    private static List<Score> highScores;
+    private static List<Score> highScores; //current list of high scores (initially brought in from text file)
 
     public Score(String name, int score) { //constructor
         n = name;
@@ -79,9 +79,9 @@ public class Score {
      * gets the scores from the high score file
      */
     public static void initializeScores() {
+        highScores = new ArrayList<>();
         try {
             Scanner inFile = new Scanner(file);
-            highScores = new ArrayList<>();
             while(inFile.hasNextLine()) {
                 String line = inFile.nextLine();
                 String name = line.substring(0, line.lastIndexOf(' '));
@@ -91,19 +91,19 @@ public class Score {
             inFile.close();
         }
         catch(FileNotFoundException e) {
-            System.out.println("High Scores File Not Found Error");
+            System.out.println("Not Able to Retrieve High Scores (File Not Found).");
         }
     }
 
     /**
-     * @return true if highScores initialized, false if highScores not initialized
+     * @return high score list
      */
-    public static boolean scoresExist() {
-        return highScores != null;
+    public static List<Score> getHighScores() {
+        return highScores;
     }
 
     /**
-     * @return String representation of high scores
+     * @return String representation of high scores (for text based game)
      */
     public static String strHighScores() {
         if(highScores.size() == 0)  return "No High Scores";
@@ -152,9 +152,12 @@ public class Score {
      * @param newScore
      */
     public static void addScore(Score newScore) {
+        if(!canAddHighScore(newScore.s))  return;
+
         //adds score if no scores (and more than 0 high scores being stored)
         if(highScores.size() == 0 && numHighScores > 0) {
             highScores.add(newScore);
+            writeScores();
             return;
         }
 
@@ -173,6 +176,8 @@ public class Score {
 
         //removes extra scores if necessary
         while(highScores.size() > numHighScores)    highScores.remove(highScores.size() - 1);
+
+        writeScores();
     }
 
     /**

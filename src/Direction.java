@@ -12,52 +12,66 @@ public class Direction {
                                                      new Location(1, 0), new Location(0, -1),
                                                      new Location(0, 0)};
 
-    private Location direction;
+    private int index;
 
     public Direction(int dir) { //constructor
-        direction = getFromDirectionList(dir);
+        index = dir;
     }
 
     /**
-     * gets the Location equivalent of the direction from a given index value
-     * @param index of value in directions array
+     * gets the Location equivalent of the direction from the index value of the current instance
      * @return Location from array
      */
-    private Location getFromDirectionList(int index) {
+    private Location getFromDirectionList() {
         return directionList[index];
     }
 
     /**
      * changes the direction
-     * @param newDir
+     * @param newDirection
      */
-    public void setDirection(int newDir) {
-        direction = getFromDirectionList(newDir);
+    public void setDirection(int newDirection) {
+        index = newDirection;
     }
 
     /**
      * returns the location of a new point based on the given direction
-     * @param original
+     * @param original location
      * @return new location
      */
     public Location getNewLocation(Location original) {
-        return Location.addLocations(original, direction);
+        return Location.addLocations(original, getFromDirectionList());
     }
 
+    /**
+     * determines whether another direction is opposite
+     * @param otherIndex (direction index to test against current instance)
+     * @return boolean (true if directions are opposites)
+     */
+    public boolean isOpposite(int otherIndex) {
+        if(index == Direction.none || otherIndex == Direction.none) return false;
+        return Math.abs(index - otherIndex) == 2;
+    }
+
+    /**
+     * determines if 2 directions are equal based on their index values
+     * @param o
+     * @return
+     */
     public boolean equals(Object o) {
         if(o instanceof Direction) {
             Direction compare = (Direction) o;
-            return direction.equals(compare.direction);
+            return index == compare.index;
         }
         return false;
     }
 
     public String toString() {
-        if(direction.equals(getFromDirectionList(Direction.up)))    return "up";
-        if(direction.equals(getFromDirectionList(Direction.right)))    return "right";
-        if(direction.equals(getFromDirectionList(Direction.down)))    return "down";
-        if(direction.equals(getFromDirectionList(Direction.left)))    return "left";
-        if(direction.equals(getFromDirectionList(Direction.none)))  return "none";
+        if(index == Direction.up)    return "up";
+        if(index == Direction.right)    return "right";
+        if(index == Direction.down)    return "down";
+        if(index == Direction.left)    return "left";
+        if(index == Direction.none)  return "none";
         else return "Direction toString Error!!!";
     }
 

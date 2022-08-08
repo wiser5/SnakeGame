@@ -1,75 +1,240 @@
 import java.util.Scanner;
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * class to run the Snake Game
  */
 public class SnakeGame {
 
-    public boolean win;
-    public boolean loss;
-    public boolean pause;
-    private static final Scanner in = new Scanner(System.in);
-    public Direction currentDirection;
+    //int values to use as placeholders for stages in the game
+    public static final int menu = 0;
+    public static final int rules = 1;
+    public static final int scores = 2;
+    public static final int game = 3;
+    public static final int postGame = 4;
+    public static final int quit = 5;
+    private JPanel[] panels = new JPanel[5]; //array for the panels used in the game
+    private static final Scanner in = new Scanner(System.in); //scanner used when game was text based
     private final static int sideLength = 50;
     private SnakeMatrix matrix;
-    private JFrame gameFrame; //JFrame for the game
-    private JPanel gamePanel; //JPanel for the matrix
+    private SnakeKeybinds keys = new SnakeKeybinds(this, panels);; //keybind class for the game
+    private JFrame currentFrame; //the current frame being used in the game
 
     /**
      * constructor for SnakeGame
      * calls method to start game and calls method to restart if necessary
      */
     public SnakeGame() {
-        win = false;
-        loss = false;
-
-        if(!Score.scoresExist())    Score.initializeScores();
-
-        //TODO: this will be part of home on SnakeMain
-        System.out.println("Snake Game");
-        System.out.println(Score.strHighScores());
-
-        //TODO: game JFrame (sizes on components)   add button to end game and return home
-        initializeGameJFrame();
-        int score = playGame(); //TODO: change snake display while game is working; change game code for continuous movement
-
-        //TODO: use dispose() to end a frame    figure out what to do if game is closed early   make it illegal to move in some directions
-
-        /*
-        //TODO: postgame screen (Scores.java)
-        if(win) System.out.println("Winner!!!");
-        System.out.println("Final Score (Snake Length): " + score);
-
-        //TODO: scoreboard screen (Scores.java)
-        if(Score.canAddHighScore(score)) {
-            Score.addScore(new Score(getName(), score));
-            Score.writeScores();
-        }
-
-        playAgain();
-
-         */
+        Score.initializeScores();
+        transition(menu);
     }
 
     /**
-     * plays the game
-     * @return snake length (score)
+     * transitions to a new screen
+     * @param newP
      */
-    public int playGame() {
-
-        while(!win && !loss) { //loops until player wins, loses, or quits
-            try { //adds pause between movements to make game playable
-                Thread.sleep(100);
-            }
-            catch(InterruptedException e) {
-                System.out.println(e.getMessage());
-            }
-            if(!pause)   matrix.move(currentDirection); //moves the snake
+    public void transition(int newP) {
+        if(currentFrame != null)    currentFrame.dispose(); //removes old frame
+        if(newP == game) { //creates game if not already created and runs the game
+            if(matrix == null)  matrix = new SnakeMatrix(this, keys, sideLength);
+            matrix.playGame();
+            return;
         }
+        else if(newP == quit)    return; //quit
+        String title = "Snake Game: ";
+        if(newP == menu)    title += "Menu";
+        else if(newP == rules)  title += "Rules";
+        else if(newP == postGame)   title += "Post Game";
+        currentFrame = new JFrame(title);
+        //initialize panel if it needs to be initialized
+        boolean addKB = true;
+        if(newP == scores) initScores();
+        else if(newP == postGame) initPG();
+        else if(panels[newP] == null) {
+            if (newP == menu) initMenu();
+            else if (newP == rules) initRules();
+        }
+        else    addKB = false;
+        keys.addKeyBinds(addKB, newP); //keybinds
+        currentFrame.setSize(new Dimension(600, 600));
+        currentFrame.add(panels[newP]);
+        currentFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        currentFrame.setVisible(true);
+    }
 
-        return matrix.getSnakeLength();
+    /**
+     * creates the menu frame
+     */
+    private void initMenu() {
+        panels[menu] = new JPanel();
+        panels[menu].setLayout(new GridLayout(5, 1));
+        JLabel label = new JLabel("Snake Game");
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        panels[menu].add(label);
+        panels[menu].add(getTransitionButton("(Space) Play", game));
+        panels[menu].add(getTransitionButton("(1) Rules", rules));
+        panels[menu].add(getTransitionButton("(2) High Scores", scores));
+        panels[menu].add(getTransitionButton("(Esc) Quit", quit));
+    }
+
+    /**
+     * display for the rules
+     */
+    private void initRules() {
+        panels[rules] = new JPanel();
+        List<String> r = new ArrayList<>();
+        r.add("Enter a Direction to Start");
+        r.add("Directions Can Be Entered Via Buttons or Keyboard");
+        r.add("Controls Are Shown in Game");
+        r.add("The Snake Moves Around Based on the Specified Direction");
+        r.add("Eat Apples to Expand in Size");
+        r.add("Score is Based on Size");
+        r.add("If a New High Score is Reached, the User Will Be Prompted for a Name to Record");
+
+        panels[rules].setLayout(new GridLayout(r.size() + 1, 1));
+        for (String rule : r) {
+            JLabel label = new JLabel(rule);
+            label.setFont(new Font(Font.SERIF, Font.PLAIN, 15));
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+            panels[rules].add(label);
+        }
+        panels[rules].add(getTransitionButton("(Esc) Return to Menu", menu));
+    }
+
+    /**
+     * creates the high score screen
+     */
+    private void initScores() {
+        panels[scores] = new JPanel();
+        List<Score> currScores = Score.getHighScores();
+        if(currScores.isEmpty()) {
+            panels[scores].setLayout(new GridLayout(2, 1));
+            JLabel label = new JLabel("No High Scores Currently");
+            label.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+            label.setHorizontalAlignment(SwingConstants.CENTER);
+            panels[scores].add(label);
+        }
+        else {
+            panels[scores].setLayout(new GridLayout(currScores.size() + 2, 1));
+            JPanel top = new JPanel();
+            top.setLayout(new GridLayout(1,3));
+            JLabel rank = new JLabel("Rank");
+            rank.setHorizontalAlignment(SwingConstants.CENTER);
+            rank.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+            top.add(rank);
+            JLabel tname = new JLabel("Name");
+            tname.setHorizontalAlignment(SwingConstants.CENTER);
+            tname.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+            top.add(tname);
+            JLabel ts = new JLabel("Score");
+            ts.setHorizontalAlignment(SwingConstants.CENTER);
+            ts.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+            top.add(ts);
+            panels[scores].add(top);
+            for(int i = 0; i < currScores.size(); i++) {
+                JPanel inner = new JPanel();
+                inner.setLayout(new GridLayout(1, 3));
+                JLabel num = new JLabel(String.valueOf(i + 1));
+                num.setHorizontalAlignment(SwingConstants.CENTER);
+                num.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+                inner.add(num);
+                JLabel name = new JLabel(currScores.get(i).getName());
+                name.setHorizontalAlignment(SwingConstants.CENTER);
+                name.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+                inner.add(name);
+                JLabel s = new JLabel(String.valueOf(currScores.get(i).getScore()));
+                s.setHorizontalAlignment(SwingConstants.CENTER);
+                s.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+                inner.add(s);
+                panels[scores].add(inner);
+            }
+        }
+        panels[scores].add(getTransitionButton("(Esc) Return to Menu", menu));
+    }
+
+    /**
+     * panel for the after game (displaying score and returning to menu)
+     */
+    private void initPG() {
+        panels[postGame] = new JPanel();
+        int rows = 2;
+        if(matrix.win) rows++;
+        if(Score.canAddHighScore(matrix.getSnakeLength()))    rows += 2;
+        panels[postGame].setLayout(new GridLayout(rows, 1));
+        if(matrix.win) {
+            JLabel winner = new JLabel("Winner!!!");
+            winner.setHorizontalAlignment(SwingConstants.CENTER);
+            panels[postGame].add(winner);
+        }
+        JLabel finalScore = new JLabel("Final Score (Snake Length): " + matrix.getSnakeLength());
+        finalScore.setHorizontalAlignment(SwingConstants.CENTER);
+        panels[postGame].add(finalScore);
+
+        if(rows > 3)    panels[postGame].add(initHS());
+
+        panels[postGame].add(getTransitionButton("(Esc) Return to Menu", menu));
+    }
+
+    /**
+     * panel to add high score
+     * @return high score panel
+     */
+    private JPanel initHS() {
+        JPanel outerP = new JPanel();
+        outerP.setLayout(new GridLayout(2, 1));
+        outerP.setSize(new Dimension(400, 200));
+        JPanel innerP = new JPanel();
+        innerP.setLayout(new GridLayout(1, 2));
+        innerP.setSize(new Dimension(400, 100));
+        JLabel label = new JLabel("\tEnter Name: ");
+        label.setHorizontalAlignment(SwingConstants.LEFT);
+        label.setFont(new Font(Font.SERIF, Font.PLAIN, 15));
+        innerP.add(label);
+        JTextField name = new JTextField();
+        innerP.add(name);
+        outerP.add(innerP);
+        JButton button = new JButton("Save Name");
+        button.addActionListener(new SnakeButtonListener(this, name, outerP, matrix.getSnakeLength()));
+        outerP.add(button);
+        return outerP;
+    }
+
+    /**
+     * sets up the frame after a name is entered of a high score
+     */
+    public void removeHSPanel() {
+        panels[postGame] = new JPanel();
+        panels[postGame].setLayout(new GridLayout(3, 1));
+        JLabel finalScore = new JLabel("Final Score (Snake Length): " + matrix.getSnakeLength());
+        finalScore.setHorizontalAlignment(SwingConstants.CENTER);
+        panels[postGame].add(finalScore);
+        JLabel label = new JLabel("Score Added");
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        panels[postGame].add(label);
+        panels[postGame].add(getTransitionButton("(Esc) Return to Menu", menu));
+        keys.addKeyBinds(true, postGame);
+
+        currentFrame.dispose();
+        currentFrame = new JFrame("Snake Game: Post Game");
+        currentFrame.setSize(new Dimension(600, 600));
+        currentFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        currentFrame.add(panels[postGame]);
+        currentFrame.setVisible(true);
+    }
+
+    /**
+     * returns a transition button that moves to a specified destination
+     * @param name (displayed name of the button)
+     * @param destination (where button will transition to)
+     * @return
+     */
+    private JButton getTransitionButton(String name, int destination) {
+        JButton button = new JButton(name);
+        button.addActionListener(new SnakeButtonListener(this, destination));
+        return button;
     }
 
     /**
@@ -119,148 +284,6 @@ public class SnakeGame {
     private String getName() {
         System.out.print("Enter A Name for High Score: ");
         return in.nextLine();
-    }
-
-    /**
-     * initialize the game JFrame with the matrix
-     */
-    private void initializeGameJFrame() {
-        gameFrame = new JFrame();
-        gameFrame.setTitle("Snake Game");
-        gameFrame.setSize(new Dimension(600, 1000));
-        gameFrame.setLayout(new GridLayout(2, 1));
-        gameFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        currentDirection = new Direction(Direction.none);
-        gameFrame.addKeyListener(new SnakeKeyListener(this));
-        gameFrame.setFocusable(true);
-
-        //gamePanel
-        initializeGamePanel();
-
-        gameFrame.add(gamePanel);
-        gameFrame.add(initializeBottomPanel());
-        gameFrame.setVisible(true);
-    }
-
-    private void initializeGamePanel() {
-        gamePanel = new JPanel();
-        gamePanel.setSize(new Dimension(600, 600));
-        gamePanel.setLayout(new GridLayout(sideLength, sideLength));
-        matrix = new SnakeMatrix(this, sideLength);
-        matrix.createOrUpdateMatrixPanel();
-        for(int r = 0; r < sideLength; r++) {
-            for(int c = 0; c < sideLength; c++) {
-                gamePanel.add(matrix.matrixPanels[r][c]);
-            }
-        }
-    }
-
-    private JPanel initializeBottomPanel() {
-        //buttonPanel, label describing moves, and label describing colors
-        JPanel bottomGamePanel = new JPanel();
-        bottomGamePanel.setSize(new Dimension(600, 300));
-        bottomGamePanel.setLayout(new GridLayout(3, 1));
-
-        bottomGamePanel.add(getSpacePanel());
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setSize(new Dimension(600, 100));
-        buttonPanel.setLayout(new BorderLayout());
-        addToDirectionPanel(buttonPanel);
-        bottomGamePanel.add(buttonPanel);
-
-        bottomGamePanel.add(getColorPanel());
-
-        return bottomGamePanel;
-    }
-
-    /**
-     * @return label explaining what the space does
-     */
-    private JPanel getSpacePanel() {
-        JPanel spacePanel = new JPanel();
-        spacePanel.setSize(new Dimension(600, 100));
-        spacePanel.setLayout(new GridLayout(3, 1));
-
-        JLabel start = new JLabel("Enter a Direction to Start");
-        start.setFont(new Font(Font.SERIF, Font.BOLD, 15));
-        start.setHorizontalAlignment(SwingConstants.CENTER);
-        spacePanel.add(start);
-
-        JLabel pause = new JLabel("Press Space to Pause or Resume Game");
-        pause.setFont(new Font(Font.SERIF, Font.BOLD, 15));
-        pause.setHorizontalAlignment(SwingConstants.CENTER);
-        spacePanel.add(pause);
-
-        JLabel esc = new JLabel("Press Escape to Quit Game");
-        esc.setFont(new Font(Font.SERIF, Font.BOLD, 15));
-        esc.setHorizontalAlignment(SwingConstants.CENTER);
-        spacePanel.add(esc);
-
-        return spacePanel;
-    }
-
-    /**
-     * adds items to the button panel
-     * @param panelToAddTo
-     */
-    private void addToDirectionPanel(JPanel panelToAddTo) {
-        for(int i = 0; i < 4; i++) {
-            String dir = "Up";
-            if(i == 1)  dir = "Down";
-            else if(i == 2) dir = "Left";
-            else if(i == 3) dir = "Right";
-
-            JButton button = new JButton(dir);
-            button.addActionListener(new SnakeButtonListener(this, dir));
-
-            String layoutPosition = BorderLayout.NORTH;
-            if(i == 1)  layoutPosition = BorderLayout.SOUTH;
-            else if(i == 2) layoutPosition = BorderLayout.WEST;
-            else if(i == 3) layoutPosition = BorderLayout.EAST;
-
-            panelToAddTo.add(button, layoutPosition);
-        }
-        JLabel centerLabel = new JLabel("Use Buttons, Arrow Keys, or WASD");
-        centerLabel.setFont(new Font(Font.SERIF, Font.BOLD, 20));
-        centerLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        panelToAddTo.add(centerLabel, BorderLayout.CENTER);
-    }
-
-    /**
-     * @return the panel listing what each color means
-     */
-    private JPanel getColorPanel() {
-        JPanel colorPanel = new JPanel();
-        colorPanel.setLayout(new GridLayout(1, 5));
-        colorPanel.setSize(new Dimension(600, 100));
-        for(int i = 0; i < 5; i++) {
-            JLabel currentLabel = new JLabel();
-            currentLabel.setFont(new Font(Font.SERIF, Font.BOLD, 15));
-            currentLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            if(i == 0) {
-                currentLabel.setText("Open Space");
-                currentLabel.setForeground(SnakeSpace.openSpace);
-            }
-            else if(i == 1) {
-                currentLabel.setText("Snake Head");
-                currentLabel.setForeground(SnakeSpace.snakeHead);
-            }
-            else if(i == 2) {
-                currentLabel.setText("Snake Body");
-                currentLabel.setForeground(SnakeSpace.snakeBody);
-            }
-            else if(i == 3) {
-                currentLabel.setText("Snake Tail");
-                currentLabel.setForeground(SnakeSpace.snakeTail);
-            }
-            else {
-                currentLabel.setText("Apple");
-                currentLabel.setForeground(SnakeSpace.apple);
-            }
-            colorPanel.add(currentLabel);
-        }
-        return colorPanel;
     }
 
 }

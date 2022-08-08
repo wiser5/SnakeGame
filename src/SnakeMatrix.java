@@ -1,8 +1,8 @@
+import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
-import java.awt.Color;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.LineBorder;
 
 /**
@@ -10,6 +10,7 @@ import javax.swing.border.LineBorder;
  */
 public class SnakeMatrix {
 
+    private JFrame frame = new JFrame("Snake Game: Game");
     private SnakeSpace[][] matrix; //matrix of SnakeSpaces
     private int sLength; //length of the sides of the matrix (given when initialized, the matrix is a square)
     private static final int initialSnakeLength = 3; //length of the snake at the start of the game; should be less than sLength and greater than or equal to 3
@@ -19,18 +20,66 @@ public class SnakeMatrix {
     private Location apple; //location of the apple currently on the map
     private Random rand; //random class used in generation of the snake (initially) and apples
     private SnakeGame currentGame; //holds the instance of the current snake game
-    public JPanel[][] matrixPanels;
+    private JPanel matrixP;
+    private JPanel[][] matrixPanel; //matrix of JPanels to be displayed
+    public boolean win;
+    public boolean loss;
+    public boolean pause;
+    private Direction currentDirection;
 
     /**
      * constructor for snakeMatrix based on a given sideLength
      * matrix is a square
      * uses initializeMatrix() to create open space and then initialize snake and apple
+     * @param game
      * @param sideLength
      */
-    public SnakeMatrix(SnakeGame game, int sideLength) {
+    public SnakeMatrix(SnakeGame game, SnakeKeybinds k, int sideLength) {
         currentGame = game;
         sLength = sideLength;
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(new Dimension(600, 1000));
+        frame.setLayout(new GridLayout(2, 1));
+        frame.setResizable(false);
+        createOrUpdateMatrixPanel();
+        k.addGameKeyBinds(this, matrixP);
+        frame.add(matrixP);
+        frame.add(initGB());
+    }
+
+    /**
+     * resets the game and then starts it
+     */
+    public void playGame() {
         initializeMatrix();
+        createOrUpdateMatrixPanel();
+        frame.setVisible(true);
+        win = false;
+        loss = false;
+        pause = false;
+        currentDirection = new Direction(Direction.none);
+        while(!win && !loss) { //loops until player wins, loses, or quits
+            try { //adds pause between movements
+                Thread.sleep(100);
+            }
+            catch(InterruptedException e) {
+                System.out.println(e.getMessage());
+            }
+            if(!pause)   move(currentDirection); //moves the snake
+        }
+        frame.setVisible(false);
+        currentGame.transition(SnakeGame.postGame); //moves the game to postgame
+    }
+
+    /**
+     * changes the direction of the snake
+     * does not change direction if the game is paused, going opposite direction of the head, or on the snake as the first move
+     * @param newDirection
+     */
+    public void changeDirection(int newDirection) {
+        if(pause || currentDirection.isOpposite(newDirection))   return;
+        if(currentDirection.equals(new Direction(Direction.none)) && snakeBody.contains((new Direction(newDirection)).getNewLocation(snakeHead)))  return;
+        currentDirection.setDirection(newDirection);
     }
 
     /**
@@ -135,8 +184,9 @@ public class SnakeMatrix {
      * adds a new apple to the map in an unoccupied location
      */
     private void addApple() {
+        //todo: optimize to pick from list of remaining spaces
         isWon();
-        if(currentGame.win)    return;
+        if(win)    return;
         apple = new Location(rand.nextInt(sLength), rand.nextInt(sLength)); //chooses random space
         //choose random space until chosen space is unoccupied
         while(matrix[apple.r][apple.c].getVal() != SnakeSpace.openSpace) {
@@ -187,7 +237,7 @@ public class SnakeMatrix {
         Location newLoc = dir.getNewLocation(snakeHead);
 
         if(isLost(newLoc)) { //lost
-            currentGame.loss = true;
+            loss = true;
             return;
         }
 
@@ -234,10 +284,7 @@ public class SnakeMatrix {
      * @return
      */
     private boolean isLost(Location loc) {
-        if(loc.c < 0 || loc.c >= sLength)   return true;
-        if(loc.r < 0 || loc.r >= sLength)   return true;
-        if(snakeBody.contains(loc))    return true;
-        return false;
+        return loc.c < 0 || loc.c >= sLength || loc.r < 0 || loc.r >= sLength || snakeBody.contains(loc);
     }
 
     /**
@@ -245,7 +292,7 @@ public class SnakeMatrix {
      */
     public void isWon() {
         if(getSnakeLength() == sLength * sLength) { //board full, won
-            currentGame.win = true;
+            win = true;
         }
     }
 
@@ -258,17 +305,20 @@ public class SnakeMatrix {
     }
 
     /**
-     * creates or updates matrixPanels to correct colors
+     * creates or updates matrixPanel to correct colors
      */
-    public void createOrUpdateMatrixPanel() {
-        if(matrixPanels == null) {
-            matrixPanels = new JPanel[sLength][sLength];
+    private void createOrUpdateMatrixPanel() {
+        if(matrixP == null) {
+            matrixP = new JPanel();
+            matrixP.setSize(new Dimension(600, 600));
+            matrixP.setLayout(new GridLayout(sLength, sLength));
+            matrixPanel = new JPanel[sLength][sLength];
             for(int r = 0; r < sLength; r++) {
                 for(int c = 0; c < sLength; c++) {
                     JPanel newPanel = new JPanel();
-                    newPanel.setBackground(matrix[r][c].getVal());
                     //newPanel.setBorder(new LineBorder(Color.BLACK));
-                    matrixPanels[r][c] = newPanel;
+                    matrixPanel[r][c] = newPanel;
+                    matrixP.add(newPanel);
                 }
             }
         }
@@ -276,10 +326,122 @@ public class SnakeMatrix {
             //TODO: optimize to only update needed panels
             for(int r = 0; r < sLength; r++) {
                 for(int c = 0; c < sLength; c++) {
-                    matrixPanels[r][c].setBackground(matrix[r][c].getVal());
+                    matrixPanel[r][c].setBackground(matrix[r][c].getVal());
                 }
             }
         }
+    }
+
+    /**
+     * sets up the bottom panel during the game
+     * @return the bottom panel
+     */
+    private JPanel initGB() {
+        //buttonPanel, label describing moves, and label describing colors
+        JPanel bottomGamePanel = new JPanel();
+        bottomGamePanel.setSize(new Dimension(600, 400));
+        bottomGamePanel.setLayout(new GridLayout(3, 1));
+
+        bottomGamePanel.add(initExp());
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setSize(new Dimension(600, 100));
+        buttonPanel.setLayout(new BorderLayout());
+        addToDirectionPanel(buttonPanel);
+        bottomGamePanel.add(buttonPanel);
+
+        bottomGamePanel.add(initC());
+
+        return bottomGamePanel;
+    }
+
+    /**
+     * @return panel explaining what the space and other buttons do
+     */
+    private JPanel initExp() {
+        JPanel exp = new JPanel();
+        exp.setSize(new Dimension(600, 100));
+        exp.setLayout(new GridLayout(3, 1));
+
+        JLabel start = new JLabel("Enter a Direction to Start");
+        start.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+        start.setHorizontalAlignment(SwingConstants.CENTER);
+        exp.add(start);
+
+        JLabel pause = new JLabel("Press Space to Pause or Resume Game");
+        pause.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+        pause.setHorizontalAlignment(SwingConstants.CENTER);
+        exp.add(pause);
+
+        JLabel esc = new JLabel("Press Escape to Quit Game");
+        esc.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+        esc.setHorizontalAlignment(SwingConstants.CENTER);
+        exp.add(esc);
+
+        return exp;
+    }
+
+    /**
+     * adds items to the button panel
+     * @param panelToAddTo
+     */
+    private void addToDirectionPanel(JPanel panelToAddTo) {
+        for(int i = 0; i < 4; i++) {
+            String dir = "Up";
+            if(i == 1)  dir = "Down";
+            else if(i == 2) dir = "Left";
+            else if(i == 3) dir = "Right";
+
+            JButton button = new JButton(dir);
+            button.addActionListener(new SnakeButtonListener(this, dir));
+
+            String layoutPosition = BorderLayout.NORTH;
+            if(i == 1)  layoutPosition = BorderLayout.SOUTH;
+            else if(i == 2) layoutPosition = BorderLayout.WEST;
+            else if(i == 3) layoutPosition = BorderLayout.EAST;
+
+            panelToAddTo.add(button, layoutPosition);
+        }
+        JLabel centerLabel = new JLabel("Use Buttons, Arrow Keys, or WASD");
+        centerLabel.setFont(new Font(Font.SERIF, Font.BOLD, 20));
+        centerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        panelToAddTo.add(centerLabel, BorderLayout.CENTER);
+    }
+
+    /**
+     * @return the panel listing what each color means
+     */
+    private JPanel initC() {
+        JPanel colorPanel = new JPanel();
+        colorPanel.setLayout(new GridLayout(1, 5));
+        colorPanel.setSize(new Dimension(600, 100));
+        for(int i = 0; i < 5; i++) {
+            JLabel currentLabel = new JLabel();
+            currentLabel.setFont(new Font(Font.SERIF, Font.BOLD, 15));
+            currentLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            if(i == 0) {
+                currentLabel.setText("Open Space");
+                currentLabel.setForeground(SnakeSpace.openSpace);
+            }
+            else if(i == 1) {
+                currentLabel.setText("Snake Head");
+                currentLabel.setForeground(SnakeSpace.snakeHead);
+            }
+            else if(i == 2) {
+                currentLabel.setText("Snake Body");
+                currentLabel.setForeground(SnakeSpace.snakeBody);
+            }
+            else if(i == 3) {
+                currentLabel.setText("Snake Tail");
+                currentLabel.setForeground(SnakeSpace.snakeTail);
+            }
+            else {
+                currentLabel.setText("Apple");
+                currentLabel.setForeground(SnakeSpace.apple);
+            }
+            colorPanel.add(currentLabel);
+        }
+        return colorPanel;
     }
 
 }

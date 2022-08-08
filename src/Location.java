@@ -6,11 +6,20 @@ public class Location {
     public int r; //row
     public int c; //column
 
-    public Location(int row, int col) { //constructor
+    /**
+     * constructor based on a given row and column
+     * @param row
+     * @param col
+     */
+    public Location(int row, int col) {
         r = row;
         c = col;
     }
 
+    /**
+     * constructor based on another location
+     * @param loc
+     */
     public Location(Location loc) {
         r = loc.r;
         c = loc.c;

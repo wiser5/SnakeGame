@@ -1,6 +1,8 @@
+import java.awt.*;
 import java.awt.event.*;
 import java.util.Map;
 import java.util.HashMap;
+import javax.swing.*;
 
 /**
  * deals with input from a button in the SnakeGame
@@ -8,24 +10,55 @@ import java.util.HashMap;
 public class SnakeButtonListener implements ActionListener {
 
     private SnakeGame g;
-    private Map<String, Integer> directionMap;
-    private int directionVal;
+    private SnakeMatrix m;
+    private static Map<String, Integer> directionMap;
+    private int val;
+    private JTextField field;
+    private JPanel panel;
+    private int type;
 
     /**
-     * constructs the button listener based on the type of button
-     * @param game
+     * direction button constructor
+     * @param matrix
      * @param direction
      */
-    public SnakeButtonListener(SnakeGame game, String direction) {
+    public SnakeButtonListener(SnakeMatrix matrix, String direction) {
+        m = matrix;
+        if(directionMap == null)    initializeDirectionMap();
+        val = directionMap.get(direction);
+        type = 1;
+    }
+
+    /**
+     * transition button constructor
+     * @param game
+     * @param transitionDestination
+     */
+    public SnakeButtonListener(SnakeGame game, int transitionDestination) {
         g = game;
-        initializeDirectionMap();
-        directionVal = directionMap.get(direction);
+        val = transitionDestination;
+        type = 2;
+    }
+
+    /**
+     * new high score button constructor
+     * @param game
+     * @param text
+     * @param p
+     * @param score
+     */
+    public SnakeButtonListener(SnakeGame game, JTextField text, JPanel p, int score) {
+        g = game;
+        field = text;
+        panel = p;
+        val = score;
+        type = 3;
     }
 
     /**
      * creates direction map based on provided string value and direction value
      */
-    private void initializeDirectionMap() {
+    private static void initializeDirectionMap() {
         directionMap = new HashMap<>();
         directionMap.put("Up", Direction.up);
         directionMap.put("Down", Direction.down);
@@ -35,10 +68,15 @@ public class SnakeButtonListener implements ActionListener {
 
     @Override
     /**
-     * changes the direction in the game if the button is clicked
+     * performs an action appropriate for the type of button
      */
     public void actionPerformed(ActionEvent e) {
-        if(!g.pause)    g.currentDirection.setDirection(directionVal);
+        if(type == 1) m.changeDirection(val);
+        else if(type == 2)  g.transition(val);
+        else if(type == 3) {
+            Score.addScore(new Score(field.getText(), val));
+            g.removeHSPanel();
+        }
     }
 
 }

@@ -24,7 +24,7 @@ public class SnakeSpace {
         c = value;
     }
 
-    public String toString() { //TODO: change colors if needed
+    public String toString() {
         String result = "";
         if(c.equals(snakeHead)) result += "snakeHead";
         else if(c.equals(snakeBody)) result += "snakeBody";
@@ -32,7 +32,7 @@ public class SnakeSpace {
         else if(c.equals(apple)) result += "apple";
         else if(c.equals(openSpace)) result += "openSpace";
         else return "SnakeSpace toString Error!!!";
-        return result + c;
+        return result + " " + c;
     }
 
 }
